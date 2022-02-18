@@ -5,6 +5,7 @@ import os
 from bson import json_util 
 from bson.objectid import ObjectId
 import re
+from flask_cors import CORS, cross_origin
 
 # Taken from https://stackoverflow.com/questions/60785345/pymongo-best-way-to-remove-oid-in-response
 def remove_oid(string):
@@ -18,11 +19,14 @@ def remove_oid(string):
 
 load_dotenv()
 app = Flask(__name__)
+cors = CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type'
 if __name__ == "__main__":
     app.run(debug=True)
 CONNECTION = os.getenv('CONNECTION')
 
 @app.route("/")
+@cross_origin()
 def get_documents():
     with MongoClient(CONNECTION) as client:
         db = client.record.record
@@ -30,15 +34,18 @@ def get_documents():
         return remove_oid( json_util.dumps({'documents' : documents}) )
 
 @app.route("/", methods=['POST'])
+@cross_origin()
 def new_document():
     content = request.json
+
     with MongoClient(CONNECTION) as client:
         db = client.record.record
-        result = db.insert_one(content).inserted_id
+        result = db.insert_one(content['data']).inserted_id
         document = db.find_one({"_id" : result})
         return remove_oid( json_util.dumps({'document' : document}))
 
 @app.route("/", methods=['DELETE'])
+@cross_origin()
 def delete_document():
     content = request.json
 
@@ -51,11 +58,14 @@ def delete_document():
     except Exception:
         abort(jsonify(message="Document not found"), 404)
     
-    return jsonify("ok"), 200
+    return jsonify("Document successfully deleted"), 200
 
-@app.route("/", methods=['PUT'])
+@app.route("/", methods=['PATCH'])
+@cross_origin()
 def update_document():
     content = request.json
+    content = content['data']
+
     with MongoClient(CONNECTION) as client:
         db = client.record.record
         id = content["_id"]

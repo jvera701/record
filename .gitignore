@@ -1,6 +1,10 @@
 # ignore venv
-venv/
+bin/
 __pycache__/
+include/
+lib/
+lib64/*
+pyvenv.cfg
 
 .http
 .env
